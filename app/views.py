@@ -151,7 +151,7 @@ def get_average(reportlist,analysis):
         print(str(e))
     return {"average":avg}
 
-def read_Img_from_HDD(img):
+def read_Img_from_HDD(img):#FIXME does not work properly
     return cv2.imread("app/sampleimages/"+img)
 
 #routes
@@ -212,26 +212,29 @@ def imglist():
 def batch():
     json = request.get_json(force=True)
     print(json)
-    imglist = ['app/sampleimages/Exp1/Images/'+ x for x in os.listdir('app/sampleimages/Exp1/Images')]#json["imagelist"]
+    imglist = ['/Exp1/Images/'+ x for x in os.listdir('app/sampleimages/Exp1/Images')]#json["imagelist"]
     actionslist = json["actions"]
     ziplist=[]
     showlist=[]
+    analyze_list=[]
     for imgid in imglist:
-        img = read_Img_from_HDD(imgid)
-        for i,action in zip(range(len(actionlist),actionslist)):
-            actiontype=action["type"]
-            if actiontype == "transformation":
-                img=transform(img,method=action["method"],parameters=action["parameters"])
-            elif actiontype == "analysis":
-                analyze_list.append({action["method"]+'_step'+str(i):analyze(img,method=action["method"],parameters=action["parameters"])})
-            elif actiontype == "show":
-                showlist.append({imgid+"onstep"+str(i):img})
-            elif actiontype == "zip":
-                ziplist.append(imgid+"onstep"+str(i))
-
+        try:
+           img = read_Img_from_HDD(imgid)
+           for i,action in zip(range(len(actionslist)),actionslist):
+               actiontype=action["type"]
+               if actiontype == "transformation":
+                   img=transform(img,method=action["method"],parameters=action["parameters"])
+               elif actiontype == "analysis":
+                   analyze_list.append({action["method"]+'_step'+str(i):analyze(img,method=action["method"],parameters=action["parameters"])})
+               elif actiontype == "show":
+                   showlist.append({imgid+"onstep"+str(i):img})
+               elif actiontype == "zip":
+                   ziplist.append(imgid+"onstep"+str(i))
+        except Exception as e: 
+            print(str(e))
 
     #if showlist/ziplist not empty send jsonified images/create onetime download link
-    return jsonify(results=reportlist)
+    return jsonify(results=analyze_list)
 
 
 """@app.route('/sobelimg.bmp')
