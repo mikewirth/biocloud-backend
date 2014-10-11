@@ -7,7 +7,20 @@ from StringIO import StringIO
 import os
 from PIL import Image
 import numpy as np
-
+class printer(object):
+    def __init__(self, f):
+        """
+        If there are no decorator arguments, the function
+        to be decorated is passed to the constructor.
+        """
+        self.f = f
+    def __call__(self, *args):
+        """
+        The __call__ method is not called until the
+        decorated function is called.
+        """
+        print "Inside "+self.f.__name__
+        return self.f(*args)
 #hack to get around 404s, might not be necessary
 @app.route("/styles/vendor-dc9008c5.css")
 def hack1():
@@ -18,12 +31,16 @@ def hack2():
     return app.send_static_file("/styles/main-e078d42e.css")
 #endhack
 #helper functions
+@printer
 def gaussianBlur(img,blrSize=3):
     return cv2.GaussianBlur(img,(blrSize,blrSize),0)
 	
 
 #treshhold the image after seprating it into subimages and counting the edges as a heuristic
-def filterBackgroundNoise(img,subimageSize=30,varianceTreshhold=10):
+@printer
+def filterBackgroundNoise(img,subimageSize=30,varianceThreshold=10):
+    print("in resultImage")
+    resultImage = 0*img 
     for ix in range(img.shape[0]/subimageSize) :
         for iy in range(img.shape[1]/subimageSize) :
             # Extracting sub image
@@ -31,7 +48,7 @@ def filterBackgroundNoise(img,subimageSize=30,varianceTreshhold=10):
             yStartPixel = iy*subimageSize
             xEndPixel = ix*subimageSize + subimageSize
             yEndPixel = iy*subimageSize + subimageSize
-            subImage = blr[xStartPixel:xEndPixel,yStartPixel:yEndPixel]
+            subImage = img[xStartPixel:xEndPixel,yStartPixel:yEndPixel]
             # Thresholding using Otsu
             if np.var(subImage.ravel()) > varianceThreshold :
             	thresh,thresholdedImg = cv2.threshold(subImage,0,255,cv2.THRESH_BINARY+cv2.THRESH_OTSU)
@@ -41,13 +58,15 @@ def filterBackgroundNoise(img,subimageSize=30,varianceTreshhold=10):
             resultImage[xStartPixel:xEndPixel,yStartPixel:yEndPixel] = thresholdedImg    
     return resultImage
 
+@printer
 def noiseRemoval(img,kSize=3):
     kernel = np.ones((kSize,kSize),np.uint8)
-    return cv2.morphologyEx(resultImage, cv2.MORPH_OPEN, kernel)
+    return cv2.morphologyEx(img, cv2.MORPH_OPEN, kernel)
 
 #jsut reads from filesys now, change for upload later
 def getImg():
-    lena = cv2.imread('app/sampleimages/lena512.bmp',0)
+    lena = cv2.imread('app/sampleimages/lena.bmp',0)
+    #lena=cv2.imread('app/Exp1/Images/P00-1_00D1.tif',0)
     return lena
 
 #use the specified transofrm on the image and return the result
@@ -58,6 +77,9 @@ def transform(img,method,parameters=None):
         return noiseRemoval(img,**parameters)
     elif (method== "filterBackgroundNoise"):
         return filterBackgroundNoise(img,**parameters)
+    else:
+        print("no known transform")
+        return img
 
 #analysis 
 def get_feature(img,featID):
@@ -75,6 +97,7 @@ def analyze(img,transformations,analysis):
         img = transform(img,**t)
     for a in analysis:
         feature_report[a]=get_feature(img,a)
+    return feature_report
 
 #io functions
 def get_average(reportlist,analysis):
@@ -82,8 +105,9 @@ def get_average(reportlist,analysis):
     try:
         for feature in analysis:
             avg[feature]= sum([x[feature] for x in reportlist])/len(reportlist)
-    except:
+    except Exception as e:
         print("there was an error, most probably a feature is not easily averaged")
+        print(str(e))
     return {"average":avg}
 
 def read_Img_from_HDD(img):
@@ -111,14 +135,21 @@ def preview():
         json = request.get_json(force=True)
         #json request specifiyng the order of operations and at what point we return the result
         intermediate=orig
-        for i in range(json["showUntil"]):
-            intermediate=transform(intermediate,**json["transformations"][i])
+        print(json)
+	if json["showUntil"] >0:
+            for i in range(json["showUntil"]):
+                intermediate=transform(intermediate,**json["transformations"][i])
+        else:
+            for i in range(len(json["transformations"])):
+                intermediate=transform(intermediate,**json["transformations"][i])
         result = Image.fromarray(intermediate)
         result.save(img_io,'BMP')
         img_io.seek(0)
-    except:
+	return send_file(img_io,mimetype='image/bmp',attachment_filename='does_not_matter.bmp',as_attachment=True)
+    except Exception as e:
         print("Error, most likely we cannot find the image under sampleimages")
-    return send_file(img_io,mimetype='image/bmp',attachment_filename='does_not_matter.bmp',as_attachment=True)
+        print(str(e))
+	return app.send_static_file("index.html")
 
 
 @app.route('/batch')
