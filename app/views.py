@@ -7,9 +7,19 @@ from StringIO import StringIO
 import os
 #import Image
 
+#hack to get around 404s
+@app.route("/styles/vendor-dc9008c5.css")
+def hack1():
+    return app.send_static_file("/styles/vendor-dc9008c5.css")
+
+@app.route("/styles/main-e078d42e.css")
+def hack2():
+    return app.send_static_file("/styles/main-e078d42e.css")
+
 @app.route('/')
 def index():
-    return render_template("/static/index.html")
+    #return render_template("/static/index.html")
+    return app.send_static_file("index.html")
 
 @app.route('/test')
 def test():
@@ -20,7 +30,7 @@ def test():
 @cross_origin()
 def render():
     img_io = StringIO()
-    return send_file("lena.bmp",mimetype='image/bmp',attachment_filename='does_not_matter.bmp',as_attachment=True)
+    return send_file("lena512.bmp",mimetype='image/bmp',attachment_filename='does_not_matter.bmp',as_attachment=True)
 
 @app.route('/sobelimg.bmp')
 def sobel():
