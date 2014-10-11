@@ -68,8 +68,52 @@ def noiseRemoval(img,kSize=3):
 def getImg():
     #lena = cv2.imread('app/sampleimages/lena.bmp',0)
     lena=cv2.imread('app/sampleimages/Exp1/Images/P00-1_00D1.tif',0)
-    print(lena)
+    #print(lena)
     return lena
+
+def removeHoles(img,kSize=3):
+    kernel = np.ones((kSize,kSize),np.uint8)
+    img_closed = cv2.morphologyEx(img, cv2.MORPH_CLOSE, kernel)
+    return img_closed
+
+
+@printer
+def skeletonize(img):
+    originalimg=img
+    size=np.size(img)
+    #Create Skeleton Array
+    skelzeros=np.zeros(img.shape,np.uint8)
+    skel=skelzeros
+    #Set a structural cross element for the morphilogical opening
+    element=cv2.getStructuringElement(cv2.MORPH_RECT,(3,3))
+    #Condition for while loop
+    done=False
+    #Itteratively Open unit. This will delete thin lines. By subtracting the result from the original binary 
+    #image we get that skeletonised segment. We then keep iterating until the entire skeleton is revealed
+    while(not done):
+        eroded=cv2.erode(img,element)
+        temp=cv2.dilate(eroded,element)
+        temp2=cv2.subtract(img,temp)
+        skel=cv2.bitwise_or(skel,temp2)
+        img=eroded.copy()
+        #When to stop the itteration
+        zeros = size - cv2.countNonZero(img)
+        if zeros==size:
+            done=True
+    return skel
+
+@printer
+def measureBV(img,pixelsize=5):
+    skel = skeletonize(img)
+    p=pixelsize
+    #Area is the sum of the binary image x pixel size^2
+    area=np.sum(img)*p**2
+    #Length is the sum of the skeleton picels * pixel size
+    length=np.sum(skel)*p
+    #Average diameter is the Area/length
+    diameter=float(area)/length
+    return (area,length,diameter)
+
 
 #use the specified transofrm on the image and return the result
 def transform(img,method,parameters=None):
@@ -79,18 +123,22 @@ def transform(img,method,parameters=None):
         return noiseRemoval(img,**parameters)
     elif (method== "filterBackgroundNoise"):
         return filterBackgroundNoise(img,**parameters)
+    elif (method== "removeHoles"):
+        return removeHoles(img,**parameters)
+    elif (method== "skeletonize"):
+        return skeletonize(img)
     else:
         print("no known transform")
         return img
 
 
-def vesselDiameter(img):
-    pass#code for vessel estimation
 
 
 def analyze(img,method,parameters):
-    if method=="vesselDiameter":
-        return {"Diameter":vesselDiameter()}
+    if method=="vesselWidth":#TODO change to apropriate
+        a,l,d= measureBV(img,parameters['pixelSize'])
+        return {"diameter":d,'length':l,'area':a}
+    return {'error':'unkown analysis'}
 
 #io functions
 def get_average(reportlist,analysis):
@@ -126,15 +174,19 @@ def preview():
         img_io = StringIO()
         #stringio for return of image without storing on disk
         json = request.get_json(force=True)
+        report_list=[]
         #json request specifiyng the order of operations and at what point we return the result
         intermediate=orig
         print(json)
-	if json["showUntil"] >0:
-            for i in range(json["showUntil"]):
-                intermediate=transform(intermediate,**json["transformations"][i])
-        else:
-            for i in range(len(json["transformations"])):
-                intermediate=transform(intermediate,**json["transformations"][i])
+	actionslist = json['actions']
+        for action in actionslist:
+            actiontype=action['type']
+            if actiontype == "transformation":
+                intermediate=transform(intermediate,action['method'],action['parameters'])
+            if actiontype == "analysis":
+                report_list.append(analyze(intermediate,action['method'],action['parameters']))
+                print(report_list)
+                #TODO figure out a way to serve this as jsonalongside with the image
         result = Image.fromarray(intermediate)
         result.save(img_io,'BMP')
         img_io.seek(0)
@@ -146,19 +198,22 @@ def preview():
 
 
 @app.route('/imglist')
+@cross_origin()
 def imglist():
     return jsonify(
-    results=({'name':"Lena",1:['static/lena.bmp']},
-	    {'name':'mice',2:['static/sampleimages/Exp1/Images/'+ x for x in os.listdir('app/sampleimages/Exp1/Images')]},
-	    {'name':'dinosaurs',3:['static/sampleimages/Exp2/Images/'+ x for x in os.listdir('app/sampleimages/Exp1/Images')]		}
+    results=({'name':"Lena",'id':1,'images':['static/lena.bmp']},
+	    {'name':'mice','id':2,'images':['static/sampleimages/Exp1/Images/'+ x for x in os.listdir('app/sampleimages/Exp1/Images')]},
+	    {'name':'dinosaurs','id':3,'images':['static/sampleimages/Exp2/Images/'+ x for x in os.listdir('app/sampleimages/Exp1/Images')]		}
 )
     )
 
-@app.route('/batch')
+@app.route('/batch',methods=['POST','GET'])
+@cross_origin()
 def batch():
     json = request.get_json(force=True)
-    imglist = json["imagelist"]
-    actionslist = json["actionlist"]
+    print(json)
+    imglist = ['app/sampleimages/Exp1/Images/'+ x for x in os.listdir('app/sampleimages/Exp1/Images')]#json["imagelist"]
+    actionslist = json["actions"]
     ziplist=[]
     showlist=[]
     for imgid in imglist:
