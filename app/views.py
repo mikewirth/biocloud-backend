@@ -51,21 +51,23 @@ def getImg():
     return lena
 
 #use the specified transofrm on the image and return the result
-def transform(img,method,params):
-if (method == "gaussianBlur"):
-    return gaussianBlur(img,**params)
-elif (method =="noiseRemoval"):
-    return noiseRemoval(img,**params)
-elif (method== "filterBackgroundNoise"):
-    return filterBackgroundNoise(img,**params)
+def transform(img,method,parameters=None):
+    if (method == "gaussianBlur"):
+        return gaussianBlur(img,**parameters)
+    elif (method =="noiseRemoval"):
+        return noiseRemoval(img,**parameters)
+    elif (method== "filterBackgroundNoise"):
+        return filterBackgroundNoise(img,**parameters)
 
-def vesselDiameter(img):
-    pass#pjs code for vessel estimation
-
+#analysis 
 def get_feature(img,featID):
     if (featID=="vesselDiameter"):
         return vesselDiameter(img)
     #elif (featID==):
+
+def vesselDiameter(img):
+    pass#code for vessel estimation
+
 
 def analyze(img,transformations,analysis):
     feature_report ={}
@@ -74,6 +76,7 @@ def analyze(img,transformations,analysis):
     for a in analysis:
         feature_report[a]=get_feature(img,a)
 
+#io functions
 def get_average(reportlist,analysis):
     avg = {}
     try:
@@ -100,18 +103,21 @@ def test():
 @app.route('/render',methods=['POST','GET'])
 @cross_origin()
 def preview():
-    orig=getImg()
-    #get the image, for now just use one from the server
-    img_io = StringIO()
-    #stringio for return of image without storing on disk
-    json = request.get_json(force=True)
-    #json request specifiyng the order of operations and at what point we return the result
-    intermediate=lena
-    for i in range(json["showUntil"]:
-        intermediate=transform(intermediate,**json["transformations"][i])
-    result = Image.fromarray(intermediate)
-    result.save(img_io,'BMP')
-    img_io.seek(0)
+    try:
+        orig=getImg()
+        #get the image, for now just use one from the server
+        img_io = StringIO()
+        #stringio for return of image without storing on disk
+        json = request.get_json(force=True)
+        #json request specifiyng the order of operations and at what point we return the result
+        intermediate=orig
+        for i in range(json["showUntil"]):
+            intermediate=transform(intermediate,**json["transformations"][i])
+        result = Image.fromarray(intermediate)
+        result.save(img_io,'BMP')
+        img_io.seek(0)
+    except:
+        print("Error, most likely we cannot find the image under sampleimages")
     return send_file(img_io,mimetype='image/bmp',attachment_filename='does_not_matter.bmp',as_attachment=True)
 
 
