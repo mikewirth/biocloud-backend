@@ -65,8 +65,9 @@ def noiseRemoval(img,kSize=3):
 
 #jsut reads from filesys now, change for upload later
 def getImg():
-    lena = cv2.imread('app/sampleimages/lena.bmp',0)
-    #lena=cv2.imread('app/Exp1/Images/P00-1_00D1.tif',0)
+    #lena = cv2.imread('app/sampleimages/lena.bmp',0)
+    lena=cv2.imread('app/sampleimages/Exp1/Images/P00-1_00D1.tif',0)
+    print(lena)
     return lena
 
 #use the specified transofrm on the image and return the result
