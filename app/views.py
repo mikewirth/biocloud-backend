@@ -9,11 +9,12 @@ from PIL import Image
 import numpy as np
 class printer(object):
     def __init__(self, f):
-        """
-        If there are no decorator arguments, the function
-        to be decorated is passed to the constructor.
-        """
-        self.f = f
+	"""
+	If there are no decorator arguments, the function
+	to be decorated is passed to the constructor.
+	"""
+	self.f = f
+
     def __call__(self, *args):
         """
         The __call__ method is not called until the
@@ -82,23 +83,14 @@ def transform(img,method,parameters=None):
         print("no known transform")
         return img
 
-#analysis 
-def get_feature(img,featID):
-    if (featID=="vesselDiameter"):
-        return vesselDiameter(img)
-    #elif (featID==):
 
 def vesselDiameter(img):
     pass#code for vessel estimation
 
 
-def analyze(img,transformations,analysis):
-    feature_report ={}
-    for t in transformations:
-        img = transform(img,**t)
-    for a in analysis:
-        feature_report[a]=get_feature(img,a)
-    return feature_report
+def analyze(img,method,parameters):
+    if method=="vesselDiameter":
+        return {"Diameter":vesselDiameter()}
 
 #io functions
 def get_average(reportlist,analysis):
@@ -153,14 +145,37 @@ def preview():
 	return app.send_static_file("index.html")
 
 
+@app.route('/imglist')
+def imglist():
+    return jsonify(
+    results=({'name':"Lena",1:['static/lena.bmp']},
+	    {'name':'mice',2:['static/sampleimages/Exp1/Images/'+ x for x in os.listdir('app/sampleimages/Exp1/Images')]},
+	    {'name':'dinosaurs',3:['static/sampleimages/Exp2/Images/'+ x for x in os.listdir('app/sampleimages/Exp1/Images')]		}
+)
+    )
+
 @app.route('/batch')
 def batch():
     json = request.get_json(force=True)
     imglist = json["imagelist"]
-    transformations = json["transformations"]
-    analysis = json["analysis"]
-    reportlist = [analyze(read_Img_from_HDD(img),transformations,analysis) for img in imglist]
-    reportlist = [get_average(reportlist,analysis)] + reportlist
+    actionslist = json["actionlist"]
+    ziplist=[]
+    showlist=[]
+    for imgid in imglist:
+        img = read_Img_from_HDD(imgid)
+        for i,action in zip(range(len(actionlist),actionslist)):
+            actiontype=action["type"]
+            if actiontype == "transformation":
+                img=transform(img,method=action["method"],parameters=action["parameters"])
+            elif actiontype == "analysis":
+                analyze_list.append({action["method"]+'_step'+str(i):analyze(img,method=action["method"],parameters=action["parameters"])})
+            elif actiontype == "show":
+                showlist.append({imgid+"onstep"+str(i):img})
+            elif actiontype == "zip":
+                ziplist.append(imgid+"onstep"+str(i))
+
+
+    #if showlist/ziplist not empty send jsonified images/create onetime download link
     return jsonify(results=reportlist)
 
 
