@@ -254,7 +254,22 @@ def analyze(img,method,parameters):
 
 #io functions
 def get_average(reportlist):
+#returns a dictionary of form {"methodid1":{"datakey1":avgdk11,"datakey2":avgdk12},"methodid1":{"datakey1":avgdk21,"datakey2":avgdk22} ..}
     avg = {}
+    methods = list(set([x['method'] for x in reportlist]))
+    for m in methods:
+        avg[m] ={"average_counter":0}
+    for x in reportlist:
+        if not avg[x["method"]]:
+            avg[x["method"]] = x['data']
+            avg[x['method']]["average_counter"]= 1
+        else:
+            for k in x['data'].keys():
+                avgx["method"][k]= avgx["method"][k]+x['data'][k]
+            avg[x['method']["average_counter"]= avg[x['method']["average_counter"]+1
+    for m in methods:
+        for k in avg[m].keys():
+            avg[m][k]=avg[m][k]/avg[m]['average_counter']
 #analyze_list.append({"method":action["method"],'data':analyze(img,method=action["method"],parameters=action["parameters"]),'step':i,'image':imgid})
 #    try:
 #        for feature in reportlist[0]['data'].keys():
