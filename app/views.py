@@ -170,8 +170,6 @@ def transform(img,method,parameters=None):
         return img
 
 
-
-
 def analyze(img,method,parameters):
 	return {"diameter":5,"length":5,"area":5}
 #if method=="vesselWidth":#TODO change to apropriate
@@ -180,15 +178,15 @@ def analyze(img,method,parameters):
 #return {'error':'unkown analysis'}
 
 #io functions
-def get_average(reportlist,analysis):
+def get_average(reportlist):
     avg = {}
     try:
-        for feature in analysis:
-            avg[feature]= sum([x[feature] for x in reportlist])/len(reportlist)
+        for feature in reportlist[0]['data'].keys():
+            avg[feature]= sum([x['data'][feature] for x in reportlist])/len(reportlist)
     except Exception as e:
         print("there was an error, most probably a feature is not easily averaged")
         print(str(e))
-    return {"average":avg}
+    return avg
 
 def read_Img_from_HDD(img):#FIXME does not work properly
     return cv2.imread("app/sampleimages/"+img)
@@ -265,7 +263,7 @@ def batch():
                if actiontype == "transformation":
                    img=transform(img,method=action["method"],parameters=action["parameters"])
                elif actiontype == "analysis":
-                   analyze_list.append({action["method"]+'_step'+str(i):analyze(img,method=action["method"],parameters=action["parameters"])})
+                   analyze_list.append({"method":action["method"],'data':analyze(img,method=action["method"],parameters=action["parameters"]),'step':i,'image':imgid})
                elif actiontype == "show":
                    showlist.append({imgid+"onstep"+str(i):img})
                elif actiontype == "zip":
@@ -274,7 +272,8 @@ def batch():
             print(str(e))
 
     #if showlist/ziplist not empty send jsonified images/create onetime download link
-    return jsonify(results=analyze_list)
+
+    return jsonify(results=analyze_list,average=get_average(analyze_list))
 
 
 """@app.route('/sobelimg.bmp')
