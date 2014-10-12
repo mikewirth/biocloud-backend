@@ -255,9 +255,7 @@ def analyze(img,method,parameters):
 #io functions
 def get_average(reportlist):
     avg = {}
-    print(reportlist)
-    for feature in reportlist[0]['data'].keys():
-        avg[feature]= sum([x['data'][feature] for x in reportlist])/len(reportlist)
+#analyze_list.append({"method":action["method"],'data':analyze(img,method=action["method"],parameters=action["parameters"]),'step':i,'image':imgid})
 #    try:
 #        for feature in reportlist[0]['data'].keys():
 #            avg[feature]= sum([x['data'][feature] for x in reportlist])/len(reportlist)
