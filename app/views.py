@@ -22,6 +22,21 @@ class printer(object):
         """
         print "Inside "+self.f.__name__
         return self.f(*args)
+def dumpArgs(func):
+    '''Decorator to print function call details - parameters names and effective values'''
+    def wrapper(*func_args, **func_kwargs):
+        arg_names = func.func_code.co_varnames[:func.func_code.co_argcount]
+        args = func_args[:len(arg_names)]
+        defaults = func.func_defaults or ()
+        args = args + defaults[len(defaults) - (func.func_code.co_argcount - len(args)):]
+        params = zip(arg_names, args)
+        args = func_args[len(arg_names):]
+        if args: params.append(('args', args))
+        if func_kwargs: params.append(('kwargs', func_kwargs))
+        print func.func_name + ' (' + ', '.join('%s = %r' % p for p in params) + ' )'
+        return func(*func_args, **func_kwargs)
+    return wrapper  
+
 #hack to get around 404s, might not be necessary
 @app.route("/styles/vendor-dc9008c5.css")
 def hack1():
@@ -81,7 +96,7 @@ def noiseRemoval(img,kSize=3,iterations=1):
 #jsut reads from filesys now, change for upload later
 def getImg():
     #lena = cv2.imread('app/sampleimages/lena.bmp',0)
-    lena=cv2.imread('app/sampleimages/Exp1/Images/P00-1_00D1.tif',0)
+    lena=cv2.imread('app/sampleimages/cellCountDataset/dna-0.png',0)
     #print(lena)
     return lena
 
@@ -240,6 +255,7 @@ def analyze(img,method,parameters):
 #io functions
 def get_average(reportlist):
     avg = {}
+    print(reportlist)
     for feature in reportlist[0]['data'].keys():
         avg[feature]= sum([x['data'][feature] for x in reportlist])/len(reportlist)
 #    try:
@@ -336,7 +352,8 @@ def batch():
 
     #if showlist/ziplist not empty send jsonified images/create onetime download link
 
-    return jsonify(results=analyze_list,average=get_average(analyze_list))
+    #return jsonify(results=analyze_list,average=get_average(analyze_list))
+    return jsonify(results=analyze_list)
 
 
 """@app.route('/sobelimg.bmp')
