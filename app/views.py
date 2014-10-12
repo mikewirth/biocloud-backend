@@ -182,7 +182,7 @@ def watershed(img) :
 @printer
 def cellSegmentation(img):
     # Converting the image to greyscale
-    img_orig_gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    img_orig_gray = img
     # Blurring the image
     img_blur = gaussianBlur(img_orig_gray,blrSize=21)
     # Theresholding (dynamic)
@@ -192,7 +192,7 @@ def cellSegmentation(img):
     # Removing the holes
     img_deholed = removeHoles(img_denoised,kernalSize=21,iterations=50)
     # Segmenting the cells
-    img_segmented = watershed(img_deholed,img)
+    img_segmented = watershed(img_deholed,cv2.cvtColor(img, cv2.COLOR_GRAY2RGB))
     # Returning the segmentated image
     return img_segmented
 
