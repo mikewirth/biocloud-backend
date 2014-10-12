@@ -60,7 +60,7 @@ def filterBackgroundNoise(img,subimageSize=30,varianceThreshold=10):
     return resultImage
 
 @printer
-def noiseRemoval(img,kSize=3):
+def noiseRemoval(img,kSize=3,iterations=1):
     kernel = np.ones((kSize,kSize),np.uint8)
     return cv2.morphologyEx(img, cv2.MORPH_OPEN, kernel)
 
@@ -71,7 +71,7 @@ def getImg():
     #print(lena)
     return lena
 
-def removeHoles(img,kSize=3):
+def removeHoles(img,kSize=3,iterations=1):
     kernel = np.ones((kSize,kSize),np.uint8)
     img_closed = cv2.morphologyEx(img, cv2.MORPH_CLOSE, kernel)
     return img_closed
@@ -103,6 +103,50 @@ def skeletonize(img):
     return skel
 
 @printer
+def thresholding(img):
+    thresh,img_thresh = cv2.threshold(img,0,255,cv2.THRESH_BINARY+cv2.THRESH_OTSU)
+    return img_thresh
+
+@printer
+def watershed(img) :
+    # Identifying the sure background area
+    kernel = np.ones((3,3),np.uint8)
+    sure_bg = cv2.dilate(img_thresh,kernel,iterations=5)
+    # Identifying the sure foreground area
+    dist_transform = cv2.distanceTransform(img_thresh,cv2.DIST_L2,3)
+    ret, sure_fg = cv2.threshold(dist_transform,0.4*dist_transform.max(),255,0)
+    sure_fg = np.uint8(sure_fg)
+    # Finding unknown region
+    unknown = cv2.subtract(sure_bg,sure_fg)
+    # Marker labelling
+    ret, img_markers = cv2.connectedComponents(sure_fg)
+    # Add one to all labels so that sure background is not 0, but 1
+    img_markers = img_markers+1
+    # Now, mark the region of unknown with zero
+    img_markers[unknown==255] = 0
+    # Doing the watershedding
+    img_markers = cv2.watershed(img_col,img_markers)
+    # Return
+    return img_markers
+
+@printer
+def cellSegmentation(img):
+    # Converting the image to greyscale
+    img_orig_gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    # Blurring the image
+    img_blur = gaussianBlur(img_orig_gray,blrSize=21)
+    # Theresholding (dynamic)
+    img_thresh = thresholding(img_blur)
+    # Removing noise
+    img_denoised = noiseRemoval(img_thresh,kernalSize=3,iterations=2)
+    # Removing the holes
+    img_deholed = removeHoles(img_denoised,kernalSize=21,iterations=50)
+    # Segmenting the cells
+    img_segmented = watershed(img_deholed,img)
+    # Returning the segmentated image
+    return img_segmented
+
+@printer
 def measureBV(img,pixelsize=5):
     skel = skeletonize(img)
     p=pixelsize
@@ -114,6 +158,13 @@ def measureBV(img,pixelsize=5):
     diameter=float(area)/length
     return (area,length,diameter)
 
+@printer
+def countSegments(img) :
+    vals = []
+    for px in img.ravel() :
+        if px not in vals :
+            vals.append(px)
+    return len(vals) - 1
 
 #use the specified transofrm on the image and return the result
 def transform(img,method,parameters=None):
@@ -127,17 +178,24 @@ def transform(img,method,parameters=None):
         return removeHoles(img,**parameters)
     elif (method== "skeletonize"):
         return skeletonize(img)
+    elif (method== "thresholding"):
+        return thresholding(img)
+    elif (method== "watershed"):
+        return watershed(img)
+    elif (method== "cellSegmentation"):
+        return cellSegmentation(img)
     else:
         print("no known transform")
         return img
-
-
 
 
 def analyze(img,method,parameters):
     if method=="vesselWidth":#TODO change to apropriate
         a,l,d= measureBV(img,parameters['pixelSize'])
         return {"diameter":d,'length':l,'area':a}
+    if method=="countCells":
+        n = countSegments(img)
+        return {"number":n}
     return {'error':'unkown analysis'}
 
 #io functions
