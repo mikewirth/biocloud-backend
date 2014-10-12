@@ -15,13 +15,13 @@ class printer(object):
 	"""
 	self.f = f
 
-    def __call__(self, *args):
+    def __call__(self, *args, **kwargs):
         """
         The __call__ method is not called until the
         decorated function is called.
         """
         print "Inside "+self.f.__name__
-        return self.f(*args)
+        return self.f(*args, **kwargs)
 def dumpArgs(func):
     '''Decorator to print function call details - parameters names and effective values'''
     def wrapper(*func_args, **func_kwargs):
@@ -158,12 +158,12 @@ def thresholding(img):
     return img_thresh
 
 @printer
-def watershed(img) :
+def watershed(img_thresh, img_col):
     # Identifying the sure background area
     kernel = np.ones((3,3),np.uint8)
     sure_bg = cv2.dilate(img_thresh,kernel,iterations=5)
     # Identifying the sure foreground area
-    dist_transform = cv2.distanceTransform(img_thresh,cv2.DIST_L2,3)
+    dist_transform = cv2.distanceTransform(img_thresh,cv2.cv.CV_DIST_L2,3)
     ret, sure_fg = cv2.threshold(dist_transform,0.4*dist_transform.max(),255,0)
     sure_fg = np.uint8(sure_fg)
     # Finding unknown region
@@ -184,13 +184,13 @@ def cellSegmentation(img):
     # Converting the image to greyscale
     img_orig_gray = img
     # Blurring the image
-    img_blur = gaussianBlur(img_orig_gray,blrSize=21)
+    img_blur = gaussianBlur(img_orig_gray,21)
     # Theresholding (dynamic)
     img_thresh = thresholding(img_blur)
     # Removing noise
-    img_denoised = noiseRemoval(img_thresh,kernalSize=3,iterations=2)
+    img_denoised = noiseRemoval(img_thresh,kSize=3,iterations=2)
     # Removing the holes
-    img_deholed = removeHoles(img_denoised,kernalSize=21,iterations=50)
+    img_deholed = removeHoles(img_denoised,kSize=21,iterations=50)
     # Segmenting the cells
     img_segmented = watershed(img_deholed,cv2.cvtColor(img, cv2.COLOR_GRAY2RGB))
     # Returning the segmentated image
@@ -230,8 +230,6 @@ def transform(img,method,parameters=None):
         return skeletonize(img)
     elif (method== "thresholding"):
         return thresholding(img)
-    elif (method== "watershed"):
-        return watershed(img)
     elif (method== "cellSegmentation"):
         return cellSegmentation(img)
     elif (method=='CropTool'):
