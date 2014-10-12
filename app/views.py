@@ -35,8 +35,22 @@ def hack2():
 @printer
 def gaussianBlur(img,blrSize=3):
     return cv2.GaussianBlur(img,(blrSize,blrSize),0)
-	
 
+#Return the crop of an image absed off certain inputs	
+def CropTool(img,top=0,bottom=0,left=0,right=0):
+    print img.shape
+    size=img.shape
+    print size[0]
+
+    if top+bottom<size[0] and left+right<size[1]:
+        crop=img[top:size[0]-bottom,left:size[1]-right]
+        print 'Cropping Image'
+    else:
+        print 'Croping Border is larger than image size, please re-adjust the cropping dimensions'
+        Error=True
+        return Error
+
+    return crop
 #treshhold the image after seprating it into subimages and counting the edges as a heuristic
 @printer
 def filterBackgroundNoise(img,subimageSize=30,varianceThreshold=10):
@@ -76,6 +90,26 @@ def removeHoles(img,kSize=3,iterations=1):
     img_closed = cv2.morphologyEx(img, cv2.MORPH_CLOSE, kernel)
     return img_closed
 
+#PJ's Edge detection method using the Canny Detector
+def edge_detection(img,min_val=15,max_val=80):
+
+
+    blur=cv2.medianBlur(img,3)
+    #testcase = cv2.Sobel(testcase,cv2.CV_64F,1,0,ksize=3)
+
+    cv2.multiply(blur,-1)
+
+    testcase = cv2.Canny(blur,25,80,3)
+    testcase2=cv2.Canny(blur,min_val,max_val,3)
+    kernel = np.ones((3,3),np.uint8)
+    dialation=cv2.dilate(testcase2,kernel,iterations =4)
+    erosion=cv2.erode(dialation,kernel,iterations=4)
+
+
+
+    result=erosion
+    
+    return result
 
 @printer
 def skeletonize(img):
@@ -97,7 +131,7 @@ def skeletonize(img):
         skel=cv2.bitwise_or(skel,temp2)
         img=eroded.copy()
         #When to stop the itteration
-        zeros = size - cv2.countNonZero(img)
+        zeros = size - int(np.sum(img)/255)
         if zeros==size:
             done=True
     return skel
@@ -184,6 +218,10 @@ def transform(img,method,parameters=None):
         return watershed(img)
     elif (method== "cellSegmentation"):
         return cellSegmentation(img)
+    elif (method=='CropTool'):
+        return CropTool(img,**parameters)
+    elif (method=='edge_detection'):
+        return edge_detection(img,**parameters)
     else:
         print("no known transform")
         return img
