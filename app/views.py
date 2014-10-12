@@ -135,10 +135,11 @@ def transform(img,method,parameters=None):
 
 
 def analyze(img,method,parameters):
-    if method=="vesselWidth":#TODO change to apropriate
-        a,l,d= measureBV(img,parameters['pixelSize'])
-        return {"diameter":d,'length':l,'area':a}
-    return {'error':'unkown analysis'}
+	return {"diameter":5,"length":5,"area":5}
+#if method=="vesselWidth":#TODO change to apropriate
+#    a,l,d= measureBV(img,parameters['pixelSize'])
+#    return {"diameter":d,'length':l,'area':a}
+#return {'error':'unkown analysis'}
 
 #io functions
 def get_average(reportlist,analysis):
@@ -213,6 +214,7 @@ def batch():
     json = request.get_json(force=True)
     print(json)
     imglist = ['/Exp1/Images/'+ x for x in os.listdir('app/sampleimages/Exp1/Images')]#json["imagelist"]
+    print imglist
     actionslist = json["actions"]
     ziplist=[]
     showlist=[]
