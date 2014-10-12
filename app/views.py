@@ -9,11 +9,11 @@ from PIL import Image
 import numpy as np
 class printer(object):
     def __init__(self, f):
-	"""
-	If there are no decorator arguments, the function
-	to be decorated is passed to the constructor.
-	"""
-	self.f = f
+        """
+        If there are no decorator arguments, the function
+        to be decorated is passed to the constructor.
+        """
+        self.f = f
 
     def __call__(self, *args, **kwargs):
         """
@@ -51,7 +51,7 @@ def hack2():
 def gaussianBlur(img,blrSize=3):
     return cv2.GaussianBlur(img,(blrSize,blrSize),0)
 
-#Return the crop of an image absed off certain inputs	
+#Return the crop of an image absed off certain inputs   
 def CropTool(img,top=0,bottom=0,left=0,right=0):
     print img.shape
     size=img.shape
@@ -69,7 +69,7 @@ def CropTool(img,top=0,bottom=0,left=0,right=0):
 #treshhold the image after seprating it into subimages and counting the edges as a heuristic
 @printer
 def filterBackgroundNoise(img,subimageSize=30,varianceThreshold=10):
-    print("in resultImage")
+    #img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)#hack to force grayscale
     resultImage = 0*img 
     for ix in range(img.shape[0]/subimageSize) :
         for iy in range(img.shape[1]/subimageSize) :
@@ -81,9 +81,9 @@ def filterBackgroundNoise(img,subimageSize=30,varianceThreshold=10):
             subImage = img[xStartPixel:xEndPixel,yStartPixel:yEndPixel]
             # Thresholding using Otsu
             if np.var(subImage.ravel()) > varianceThreshold :
-            	thresh,thresholdedImg = cv2.threshold(subImage,0,255,cv2.THRESH_BINARY+cv2.THRESH_OTSU)
+                thresh,thresholdedImg = cv2.threshold(subImage,0,255,cv2.THRESH_BINARY+cv2.THRESH_OTSU)
             else :
-            	thresholdedImg = 0*subImage
+                thresholdedImg = 0*subImage
             # Adding the subimage the result image
             resultImage[xStartPixel:xEndPixel,yStartPixel:yEndPixel] = thresholdedImg    
     return resultImage
@@ -96,7 +96,8 @@ def noiseRemoval(img,kSize=3,iterations=1):
 #jsut reads from filesys now, change for upload later
 def getImg():
     #lena = cv2.imread('app/sampleimages/lena.bmp',0)
-    lena=cv2.imread('app/sampleimages/cellCountDataset/dna-0.png',0)
+    #lena=cv2.imread('app/sampleimages/cellCountDataset/dna-0.png',0)
+    lena = cv2.imread('app/sampleimages/Exp1/Images/P00-1_00D1.tif',0)
     #print(lena)
     return lena
 
@@ -255,30 +256,38 @@ def get_average(reportlist):
 #returns a dictionary of form {"methodid1":{"datakey1":avgdk11,"datakey2":avgdk12},"methodid1":{"datakey1":avgdk21,"datakey2":avgdk22} ..}
     avg = {}
     methods = list(set([x['method'] for x in reportlist]))
-    for m in methods:
-        avg[m] ={"average_counter":0}
-    for x in reportlist:
-        if not avg[x["method"]]:
-            avg[x["method"]] = x['data']
-            avg[x['method']]["average_counter"]= 1
-        else:
-            for k in x['data'].keys():
-                avgx["method"][k]= avgx["method"][k]+x['data'][k]
-            avg[x['method']["average_counter"]= avg[x['method']["average_counter"]+1
-    for m in methods:
-        for k in avg[m].keys():
-            avg[m][k]=avg[m][k]/avg[m]['average_counter']
-#analyze_list.append({"method":action["method"],'data':analyze(img,method=action["method"],parameters=action["parameters"]),'step':i,'image':imgid})
-#    try:
-#        for feature in reportlist[0]['data'].keys():
-#            avg[feature]= sum([x['data'][feature] for x in reportlist])/len(reportlist)
-#    except Exception as e:
-#        print("there was an error, most probably a feature is not easily averaged")
-#        print(str(e))
-    return avg
+    try:
+         for m in methods:
+             avg[m] ={"average_counter":0}
+    except Exception as e:
+         print("Error determinign method")
+         print(str(e))
+    try:
+         for x in reportlist:
+             if x['method'] not in avg.keys():
+                 avg[x["method"]] = x['data']
+                 avg[x['method']]["average_counter"]= 1
+             else:
+                 #print(x['data'].keys())
+                 #print(avg[x['method']].keys())
+                 for k in x['data'].keys():
+                     avg[x["method"]][k]= avg[x["method"]][k]+x['data'][k]
+                 avg[x['method']]["average_counter"]= avg[x['method']]["average_counter"]+1
+    except Exception as e:
+          print("Error error ccounting upward")
+          print(str(e))
+    try:
+          for m in methods:
+             for k in avg[m].keys():
+                 avg[m][k]=avg[m][k]/avg[m]['average_counter']
+    except Exception as e:
+         print("Error creating mean")
+         print(str(e))
+    #return avg
+    return {"vesselWidth":{'diameter':5,'length':6,'area':10,'average_counter':100}}
 
 def read_Img_from_HDD(img):#FIXME does not work properly
-    return cv2.imread("app/sampleimages/"+img)
+    return cv2.imread("app/sampleimages/"+img,0)
 
 #routes
 @app.route('/')
@@ -304,7 +313,7 @@ def preview():
         #json request specifiyng the order of operations and at what point we return the result
         intermediate=orig
         print(json)
-	actionslist = json['actions']
+        actionslist = json['actions']
         for action in actionslist:
             actiontype=action['type']
             if actiontype == "transformation":
@@ -316,20 +325,20 @@ def preview():
         result = Image.fromarray(intermediate)
         result.save(img_io,'BMP')
         img_io.seek(0)
-	return send_file(img_io,mimetype='image/bmp',attachment_filename='does_not_matter.bmp',as_attachment=True)
+        return send_file(img_io,mimetype='image/bmp',attachment_filename='does_not_matter.bmp',as_attachment=True)
     except Exception as e:
         print("Error, most likely we cannot find the image under sampleimages")
         print(str(e))
-	return app.send_static_file("index.html")
+    return app.send_static_file("index.html")
 
 
 @app.route('/imglist')
 @cross_origin()
 def imglist():
     return jsonify(
-    results=({'name':"Lena",'id':1,'images':['static/lena.bmp']},
-	    {'name':'mice','id':2,'images':['static/sampleimages/Exp1/Images/'+ x for x in os.listdir('app/sampleimages/Exp1/Images')]},
-	    {'name':'dinosaurs','id':3,'images':['static/sampleimages/Exp2/Images/'+ x for x in os.listdir('app/sampleimages/Exp1/Images')]		}
+    results=({'name':"Lena",'id':1,'images':['/static/lena.bmp']},
+        {'name':'mice','id':2,'images':['/static/sampleimages/Exp1/Images/'+ x for x in os.listdir('app/sampleimages/Exp1/Images')]},
+        {'name':'dinosaurs','id':3,'images':['/static/sampleimages/Exp2/Images/'+ x for x in os.listdir('app/sampleimages/Exp1/Images')]     }
 )
     )
 
@@ -340,7 +349,7 @@ def batch():
     print(json)
     imglist = ['/Exp1/Images/'+ x for x in os.listdir('app/sampleimages/Exp1/Images')]#json["imagelist"]
     imglist = imglist[:8]
-    print imglist
+    print (imglist)
     actionslist = json["actions"]
     ziplist=[]
     showlist=[]
@@ -359,12 +368,13 @@ def batch():
                elif actiontype == "zip":
                    ziplist.append(imgid+"onstep"+str(i))
         except Exception as e: 
+            print("error in batch process")
             print(str(e))
 
     #if showlist/ziplist not empty send jsonified images/create onetime download link
 
-    #return jsonify(results=analyze_list,average=get_average(analyze_list))
-    return jsonify(results=analyze_list)
+    return jsonify(results=analyze_list,average=get_average(analyze_list))
+    #return jsonify(results=analyze_list)
 
 
 """@app.route('/sobelimg.bmp')

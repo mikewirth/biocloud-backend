@@ -1,0 +1,12 @@
+<div class="imageview" resize>
+  <div class="center" ng-include="app/batch/batch-images.html">
+  </div>
+</div>
+<div class="footer patternbg">
+  <a ng-click="refresh()">Refresh image</a>
+  <ul class="renderingPipeline" dnd-list="renderingPipeline.transformations">
+    <li ng-repeat="transformation in renderingPipeline.transformations" class="transformation{{renderingPipeline.showUntil == $index + 1 ? ' active' : ''}}" dnd-draggable="transformation" dnd-effect-allowed="copyMove" dnd-moved="deleteTransformation($index)">
+      <span>{{transformation.displayName}}</span>
+    </li>
+  </ul>
+</div>

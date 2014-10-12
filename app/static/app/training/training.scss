@@ -1,0 +1,245 @@
+.footer {
+    position: absolute;
+    bottom: 0;
+    width: 100%;
+    /* Set the fixed height of the footer here */
+    height: 140px;
+    background-color: #f5f5f5;
+  }
+
+.training {
+  .imageview {
+    height: 500px;
+    overflow-y: scroll;
+    margin-bottom: 140px;
+
+    background-color: #2b3036;
+    box-shadow: inset 0 0 10px #000000;
+
+    text-align: center;
+
+    .center {
+      position: relative;
+      top: 50%;
+      transform: translateY(-50%);
+    }
+    img {
+      max-width: 100%;
+      max-height: 100%;
+    }
+    .message {
+      color: #fff;
+      border: 1px dashed #fff;
+      width: 400px;
+      height: 300px;
+      margin: 0 auto;
+      display: table;
+      
+      span {
+        vertical-align: middle;
+        display: table-cell;
+      }
+    }
+  }
+
+  .pipelineWrapper {
+    position: relative;
+    height: 140px;
+  }
+}
+
+.transformation {
+  position: relative;
+  /* display: inline-block; */
+  float: left;
+  width: 100px;
+  height: 80px;
+  background: #fff;
+  border: 2px solid #000;
+  margin: 5px;
+  border-radius: 10px;
+
+  text-align: center;
+  line-height: 80px;
+
+  span {
+    display: inline-block;
+    vertical-align: middle;
+    line-height: normal;
+  }
+}
+
+.transformationList {
+  margin: 0;
+  padding: 0;
+  list-style-type: none;
+}
+
+.renderingPipeline {
+  position: relative;
+  top: 50%;
+  transform: translateY(-50%);
+  margin: 0;
+  height: 90px;
+
+  list-style-type: none;
+  .transformation, .dndPlaceholder {
+    margin-right: 40px;
+
+    &:hover .delete {
+      display: block;
+    }
+    .delete {
+      display: none;
+      position: absolute;
+      right: -10px;
+      top: -10px;
+      width: 21px;
+      height: 21px;
+      color: #000;
+      cursor: pointer;
+
+      background: #fff;
+      border-radius: 10px;
+      line-height: 17px;
+      text-align: center;
+      border: 2px solid #000;
+    }
+  }
+
+  li::after {
+    content: '\279E';    
+    position: absolute;
+    left: 107px;
+    top: 20px;
+    color: #fff;
+    font: 30px bold;
+  }
+
+  li:last-child::after {
+    content: '';
+  }
+
+  li.dndDragging::after {
+    content: '';
+  }
+
+}
+
+
+
+/**
+ * With nested lists it's very important that only the droplist and the
+ * draggable elements react to mouse events. This can be achieved as follows:
+ */
+ul[dnd-list] * {
+  /* pointer-events: none; */
+}
+
+/**
+ * For the correct positioning of the placeholder element, the dnd-list and
+ * it's children must have position: relative
+ */
+ul[dnd-list], ul[dnd-list] > li { 
+    pointer-events: auto;
+    position: relative;
+}
+
+/**
+ * The dnd-list should always have a min-height,
+ * otherwise you can't drop to it once it's empty
+ */
+ul[dnd-list].renderingPipeline {
+    display: block;
+    min-width: 100px;
+    // height: 100px;
+    padding-left: 0px;
+}
+
+/**
+ * The dndDraggingSource class will be applied to
+ * the source element of a drag operation. It makes
+ * sense to hide it to give the user the feeling
+ * that he's actually moving it.
+ */
+ul[dnd-list].renderingPipeline .dndDraggingSource {
+    display: none;
+}
+
+/**
+ * An element with .dndPlaceholder class will be
+ * added to the dnd-list while the user is dragging
+ * over it.
+ */
+ul[dnd-list].renderingPipeline .dndPlaceholder {
+    @extend .transformation;
+    background: none !important;
+    border: 1px dashed #fff !important;
+}
+
+/**
+ * The dnd-lists's child elements currently MUST have
+ * position: relative. Otherwise we can not determine
+ * whether the mouse pointer is in the upper or lower
+ * half of the element we are dragging over. In other
+ * browsers we can use event.offsetY for this.
+ */
+ /*
+ul[dnd-list].renderingPipeline li {
+    background-color: #fff;
+    border: 1px solid #ddd;
+    display: inline-block;
+    padding: 10px 15px;
+    margin-bottom: -1px;
+    
+     Disable text selection if item is not draggable 
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    -khtml-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+}*/
+
+.datasetSelector {
+  text-align: center;
+  border-right: 1px solid #f9f9f9;
+  height: 100%;
+
+  select {
+    margin-top: 30px;
+  }
+
+  .btn {
+    width: 100%;
+    margin-top: 10px;
+  }
+}
+
+/*
+ * Sidebar
+ */
+
+/* Hide for mobile, show later */
+.sidebar {
+  display: none;
+
+  h4 {
+    color: #fff;
+  }
+}
+@media (min-width: 768px) {
+  .sidebar {
+    position: fixed;
+    top: 50px;
+    bottom: 0;
+    left: 0;
+    z-index: 1000;
+    display: block;
+    padding: 10px;
+    overflow-x: hidden;
+    overflow-y: auto; /* Scrollable contents if viewport is shorter than content. */
+    background-color: #f5f5f5;
+    width: 240px;
+  }
+}
