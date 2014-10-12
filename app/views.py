@@ -113,7 +113,8 @@ def edge_detection(img,min_val=15,max_val=80):
 
 @printer
 def skeletonize(img):
-    originalimg=img
+    #forcibly binarize to ensure idiot proofness
+    junk,img = cv2.threshold(img, 127,255,cv2.THRESH_BINARY)
     size=np.size(img)
     #Create Skeleton Array
     skelzeros=np.zeros(img.shape,np.uint8)
@@ -181,7 +182,7 @@ def cellSegmentation(img):
     return img_segmented
 
 @printer
-def measureBV(img,pixelsize=5):
+def measureBV(img,pixelsize=1):
     skel = skeletonize(img)
     p=pixelsize
     #Area is the sum of the binary image x pixel size^2
@@ -239,12 +240,14 @@ def analyze(img,method,parameters):
 #io functions
 def get_average(reportlist):
     avg = {}
-    try:
-        for feature in reportlist[0]['data'].keys():
-            avg[feature]= sum([x['data'][feature] for x in reportlist])/len(reportlist)
-    except Exception as e:
-        print("there was an error, most probably a feature is not easily averaged")
-        print(str(e))
+    for feature in reportlist[0]['data'].keys():
+        avg[feature]= sum([x['data'][feature] for x in reportlist])/len(reportlist)
+#    try:
+#        for feature in reportlist[0]['data'].keys():
+#            avg[feature]= sum([x['data'][feature] for x in reportlist])/len(reportlist)
+#    except Exception as e:
+#        print("there was an error, most probably a feature is not easily averaged")
+#        print(str(e))
     return avg
 
 def read_Img_from_HDD(img):#FIXME does not work properly
@@ -309,6 +312,7 @@ def batch():
     json = request.get_json(force=True)
     print(json)
     imglist = ['/Exp1/Images/'+ x for x in os.listdir('app/sampleimages/Exp1/Images')]#json["imagelist"]
+    imglist = imglist[:8]
     print imglist
     actionslist = json["actions"]
     ziplist=[]
